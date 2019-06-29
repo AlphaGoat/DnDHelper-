@@ -1,0 +1,19 @@
+CREATURETYPE="Dire Wolf"
+AC=15;
+HP=5d10+10;
+SPEED=50;
+STR=17(+3);
+DEX=15(+2);
+CON=15(+2);
+INT=3(-4);
+WIS=12(+1);
+CHA=7(-2);
+SKILLS=Perception+3,Stealth+4;
+SENSES=passivePerception(13);
+LANGUAGES=NONE;
+CHALLENGE=1;
+XP=200
+ABILITIES=[Keen hearing and smell]:"This wolf has advantage on Wisdom (perception) checks relying on hearing or smell", [Pack Tactics]:"The wolf has advantage on attack roll if at least one of the wolf's allies is within 5 feet of the creature and the ally is not incapacitated";
+ATTACKS=<Bite><hit>5<\hit><reach>5<\reach><numTargets>1<\numTargets><attkDmg>2d6+3<\attkDmg><dmgType>piercing<\dmgType><addEffects>"If the target is a creature, it must succeed on a DC 13 strength saving throw or be knocked prone."</addEffects><\Bite>;
+SPELLS=NONE
+

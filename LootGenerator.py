@@ -1,0 +1,3 @@
+
+
+def lootGenerator(lvl, numMonsters):

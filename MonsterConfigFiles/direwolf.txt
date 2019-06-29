@@ -1,0 +1,51 @@
+[DireWolf]
+CREATURETYPE = Dire Wolf
+AC = 15
+	[[HP]]
+	number= 5
+	dtype= 10
+	modifier= 10
+SPEED= 50
+	[[ATTRIBUTES]]
+		[[[STR]]]
+		Value= 17
+		Modifier= 3
+		[[[DEX]]]
+		Value= 15
+		Modifier= 2
+		[[[CON]]]
+		Value= 15
+		Modifier= 2
+		[[[INT]]]
+		Value= 3
+		Modifier= -4
+		[[[WIS]]]
+		Value= 12
+		Modifier= 1
+		[[[CHA]]]
+		Value= 7
+		Modifier= -2
+	[[SKILLS]]
+	Perception = 3
+	Stealth = 4
+	[[SENSES]]
+		Passive Perception = 13
+LANGUAGES = None
+CHALLENGE = 1
+XP = 200
+	[[ABILITIES]]
+		Keen hearing and smell = This wolf has advantage on Wisdom (perception) checks relying on hearing or smell
+		Pack Tactics = The wolf has advantage on attack roll if at least one of the wolf's allies is within 5 feet of the creature and the ally is not incapacitated
+	[[ATTACKS]]
+		[[[Bite]]]
+			hit = 5
+			reach = 5
+			numTargets = 1
+			[[[[attkDmg]]]]
+				number = 2
+				dtype = 6
+				modifier = 3
+			dmgType = piercing
+			addEffects = If the target is a creature, it must succeed on a DC 13 strength saving throw or be knocked prone		
+`j
+

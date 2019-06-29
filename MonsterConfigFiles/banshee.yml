@@ -1,0 +1,71 @@
+ABILITIES:
+  Detect Life: The banshee can magically sense the presence of living creatures up
+    to 5 miles away. She knows the general direction they're in but not their exact
+    locations.
+  Incorporeal Movement: The  banshee can move through other creatures and objects
+    as if they were difficult terrain. She takes 5 (1d10) force damage if she ends
+    her turn inside an object
+ADDINFO: {}
+ARGS: []
+ARMORCLASS: 12
+ATTACKS: N/A
+CHALLENGE: 4
+CREATURETYPE: Medium Undead
+EXPERIENCEPOINTS: 1100
+HITPOINTS:
+  dieType: 8
+  modifer: 0
+  number: 13
+NAME: Banshee
+SAVETHROWS:
+  Cha: 4
+  Wis: 2
+SPEED: 0 ft., fly 40 ft. (hover)
+SPELLS:
+  Corrupting Touch:
+    AOE: N/A
+    CASTINGTIME: Immediate
+    CASTRANGE: 5 ft.
+    COMPONENTS: VS
+    DAMAGE:
+      dieType: 6
+      modifier: 2
+      number: 3
+    DESC: 'Melee Spell Attack, +4 to hit, reach 5 ft., one target. Hit: 12(3d6+2)
+      necrotic damage'
+    DURATION: N/A
+    NAME: Corrupting Touch
+  Horrifying Visage:
+    AOE: 60 ft.
+    CASTINGTIME: Immediate
+    CASTRANGE: 60 ft.
+    COMPONENTS: VS
+    DAMAGE:
+      dieType: 0
+      modifier: 0
+      number: 0
+    DESC: Each non-undead creature within 60 feet of the banshee that can see her
+      must succeed on a DC 13 Wisdom saving throw or be frightened for 1 minute. A
+      frightened target can repeat the saving throw at the end of each of its turns,
+      with disadvantage if the banshee is within line of sight, ending the effect
+      on itself on a success. If a target's saving throw is succesful or the effects
+      end for it, the target is immune to the banshee's Horrifying Visage for the
+      next 24 hours.
+    DURATION: 1 min.
+    NAME: Horrifying Visage
+  Wail:
+    AOE: 30 ft. radii
+    CASTINGTIME: Immediate
+    CASTRANGE: 30 ft.
+    COMPONENTS: VS
+    DAMAGE:
+      dieType: 6
+      modifier: 0
+      number: 3
+    DESC: The banshee releases a mournful wail, provided that she isn't in the sunlight.
+      This wail has no effect on constructs and the undead. All other creatures within
+      30 feet of her that can hear her must make a DC 13 Constitution saving throw.
+      On a failure, a creature drops to 0 HP. On a success, a creature takes 10 (3d6)
+      psychic dmg
+    DURATION: N/A
+    NAME: Wail

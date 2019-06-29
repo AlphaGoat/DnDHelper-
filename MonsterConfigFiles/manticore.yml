@@ -1,0 +1,50 @@
+ABILITIES:
+  Tail Spike Regrowth: The manticore has 24 tail spikes. Used spikes regrow when manticore
+    finishes a long rest
+ADDINFO: {}
+ARGS: []
+ARMORCLASS: 14
+ATTACKS:
+- AOE: null
+  ATTKDMG:
+    dieType: 8
+    modifier: 3
+    number: 1
+  DESCRIPTION: 'Melee Weapon Attack: =5 to hit, reach 5 ft., one target. Hit: 7 (1d8+3)
+    piercing damage'
+  HIT: 5
+  NAME: Bite
+  NUMTARGETS: 1
+  REACH: 5
+- AOE: null
+  ATTKDMG:
+    dieType: 6
+    modifier: 3
+    number: 1
+  DESCRIPTION: 'Melee Weapon Attack: =5 to hit, reach 5 ft., one target. Hit: 6 (1d6+3)
+    slashing damage'
+  HIT: 5
+  NAME: Claw
+  NUMTARGETS: 1
+  REACH: 5
+- AOE: null
+  ATTKDMG:
+    dieType: 8
+    modifier: 3
+    number: 1
+  DESCRIPTION: 'Ranged Weapon Attack: +5 to hit, range 100/200 fit., one target. Hit:
+    7 (1d8+3) piercing damage'
+  HIT: 5
+  NAME: Tail Spike
+  NUMTARGETS: 1
+  REACH: 100/200ft.
+CHALLENGE: 3
+CREATURETYPE: Large Monstrosity
+EXPERIENCEPOINTS: 700
+HITPOINTS:
+  dieType: 10
+  modifer: 24
+  number: 8
+NAME: Manticore
+SPEED: 30 ft., fly 50 ft.
+SPELLS: null
