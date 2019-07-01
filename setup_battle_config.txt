@@ -1,0 +1,2 @@
+python setupBattle.py --battle_csv="/home/peter/Programming/Python_Files/DnDHelper/BattleScenarios/test.csv" --players Matt Ian Justin
+
