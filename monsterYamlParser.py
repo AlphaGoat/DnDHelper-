@@ -1,13 +1,14 @@
 import yaml
 import os
 
+from battleHelperFunctions import die_roll
+
 import pdb
 
-std_dir = "/home/peter/Programming/Python_Files/DnDHelper/MonsterConfigFiles"
 
 class Creature(object):
 
-    def __init__(self, name, creature_type, yamlDir=std_dir, 
+    def __init__(self, name, creature_type,
         allegiance='foe', openYaml=1, x=0, y=0):
 
         """
@@ -31,25 +32,23 @@ class Creature(object):
                                      creature features from yaml file
         """
 
-        self.yamlDir = yamlDir
         self.creature_type = creature_type
         self.name = name
         # initialize attributes of the creature
-        self.creatureConfig = None
-        self.name = name
+        self.creature_config = None
         self.attributes = None
         self.abilities = None
         self.feats = None
         self.attacks = None
         self.spells = None
         self.challenge_rating = None
-        self.armorClass = None
+        self.armor_class = None
         self.creature_class = None
-        self.experiencePoints = None
-        self.maxHP = None
-        self.currHP = None
+        self.experience_points = None
+        self.max_hitpoints = None
+        self.current_hitpoints = None
         self.speed = None
-        self.savethrows = None
+        self.save_throws = None
         self.args = None
 
         # variable attributes: can change during the course of the battle
@@ -79,30 +78,34 @@ class Creature(object):
         self.openYaml = openYaml
 
         # Flags set for succesful completion of class methods
-        self.openSuccess = 0
+        self.open_success = 0
 
         if self.openYaml == 1:
-            yaml_file_path = self.loadYaml()
+            self.yaml_file_path = self.loadYaml()
             #pdb.set_trace()
-            if yaml_file_path != 0:
-                self.importFeatures(yaml_file_path)
-                self.openSuccess = 1
+            if self.yaml_file_path != 0:
+                self.importFeatures(self.yaml_file_path)
+                self.open_success = 1
+
+        if self.open_success == 0:
+            raise ConfigOpenError
 
     def loadYaml(self):
 
         #pdb.set_trace()
 
-        path = os.path.join(self.yamlDir, 
+        path = os.path.join('../MonsterConfigFiles',
                 self.creature_type + '.yml')
-        case_invariant_path = os.path.join(self.yamlDir, 
+        case_invariant_path = os.path.join('../MonsterConfigFiles',
                 self.creature_type.lower() + '.yml')
+        print("path of monster config: ", path)
         if os.path.exists(path):
             return path
         elif os.path.exists(case_invariant_path):
             return case_invariant_path
         else:
             # self.error_msg.yaml_load_error()
-            print("Error: unable to import creature config. File does not exist")
+            print("Error: unable to import creature config for type {}. File does not exist".format(self.creature_type))
             return 0
 
 
@@ -115,6 +118,12 @@ class Creature(object):
             errors = []
 
             # Import different creature features from yaml file
+            print("creature_data type: ", type(creature_data))
+            for key, value in creature_data.items():
+                print("key: ", key)
+                print("value: ", value)
+
+            #pdb.set_trace()
 
             #pdb.set_trace()
             # Creature Name
@@ -123,76 +132,175 @@ class Creature(object):
                 #pdb.set_trace()
                 self.attributes = creature_data["ATTRIBUTES"]
             except KeyError:
-                errors.append("attributes")
-                pass
+                print("Unable to load attributes")
+                print("Input some now?")
+                confirmation = input("(y/N): ")
+                if confirmation.lower() == 'y':
+                    attribute_input = input("Attributes: ")
+                else:
+                    errors.append("attributes")
+                    pass
 
             # Creature Abilities
             try:
                 self.abilities = creature_data["ABILITIES"]
             except KeyError:
-                errors.append("abilities")
-                pass
+                print("Unable to load abilities")
+                print("Input some now?")
+                confirmation = input("(y/N): ")
+                if confirmation.lower() == 'y':
+                    abilities_input = input("Abilities: ")
+                    # Put in some post processing here
+                    self.abilities = abilities_input
+                else:
+                    errors.append("abilities")
+                    pass
 
             try:
                 self.feats = creature_data["FEATS"]
             except KeyError:
-                errors.append("feats")
-                pass
+                print("Unable to load feats")
+                print("Input some now?")
+                confirmation = input("(y/N): ")
+                if confirmation.lower() == 'y':
+                    feats_input = input("feats: ")
+                    # Put in some post processing here
+                    self.feats = feats_input
+                else:
+                    errors.append("feats")
+                    pass
 
             # Creature Actions
             try:
                 self.actions = creature_data["ACTIONS"]
             except KeyError:
-                errors.append("actions")
-                pass
+                print("Unable to load actions")
+                print("Input some now?")
+                confirmation = input("(y/N): ")
+                if confirmation.lower() == 'y':
+                    actions_input = input("actions: ")
+                    # Put in some post processing here
+                    self.actions["misc actions"] = actions_input
+                else:
+                    errors.append("actions")
+                    pass
 
             # Creature Attacks
             try:
-                self.attacks = creature_data["ATTACKS"]
+                self.actions['attacks'] = creature_data["ATTACKS"]
             except KeyError:
-                errors.append("attacks")
-                pass
+                print("Unable to load attacks")
+                print("Input some now?")
+                confirmation = input("(y/N): ")
+                if confirmation.lower() == 'y':
+                    attacks_input = input("attacks: ")
+                    # Put in some post processing here
+                    self.actions["attacks"] = attacks_input
+                else:
+                    errors.append("attacks")
+                    self.actions["attacks"] = None
+                    pass
 
             # Creature spells
             try:
-                self.spells = creature_data["SPELLS"]
+                self.actions['spells'] = creature_data["SPELLS"]
             except KeyError:
-                errors.append("spells")
-                pass
+                print("Unable to load spells")
+                print("Input some now?")
+                confirmation = input("(y/N): ")
+                if confirmation.lower() == 'y':
+                    spells_input = input("spells: ")
+                    # Put in some post processing here
+                    self.actions["spells"] = spells_input
+                else:
+                    errors.append("spells")
+                    self.actions["spells"] = None
+                    pass
 
             # Creature challenge rating
             try:
                 self.challenge_rating = creature_data["CHALLENGE"]
             except KeyError:
-                errors.append("challenge")
-                pass
+                print("Unable to load challenge_rating")
+                print("Input some now?")
+                confirmation = input("(y/N): ")
+                if confirmation.lower() == 'y':
+                    challenge_rating_input = input("challenge_rating: ")
+                    # Put in some post processing here
+                    self.challenge_rating = challenge_rating_input
+                else:
+                    errors.append("challenge_rating")
+                    pass
 
             # Creature challenge rating
             try:
-                self.armorClass = creature_data["ARMORCLASS"]
+                self.armor_class = creature_data["ARMORCLASS"]
             except KeyError:
-                errors.append("armorClass")
-                pass
+                print("Unable to load armor_class")
+                print("Input some now?")
+                confirmation = input("(y/N): ")
+                if confirmation.lower() == 'y':
+                    armor_class_input = input("armor_class: ")
+                    # Put in some post processing here
+                    self.armor_class = armor_class_input
+                else:
+                    errors.append("armor_class")
+                    pass
 
             # Creaturetype
             try:
                 self.creature_class = creature_data["CREATURETYPE"]
             except KeyError:
-                errors.append("creature_class")
-                pass
+                print("Unable to load creature type")
+                print("Input some now?")
+                confirmation = input("(y/N): ")
+                if confirmation.lower() == 'y':
+                    creature_class_input = input("creature_class: ")
+                    # Put in some post processing here
+                    self.creature_class = creature_class_input
+                else:
+                    errors.append("creature_class")
+                    pass
 
             # Creature experience points
             try:
-                self.experiencePoints = creature_data["EXPERIENCEPOINTS"]
+                self.experience_points = creature_data["EXPERIENCEPOINTS"]
             except KeyError:
-                errors.append("experiencePoints")
-                pass
+                print("Unable to load experience_points")
+                print("Input some now?")
+                confirmation = input("(y/N): ")
+                if confirmation.lower() == 'y':
+                    experience_points_input = input("experience_points: ")
+                    # Put in some post processing here
+                    self.experience_points = experience_points_input
+                else:
+                    errors.append("experience_points")
+                    pass
 
             # Creature experience points
             try:
-                self.hp = creature_data["HITPOINTS"]
+                self.hit_dice = creature_data["HITPOINTS"]
+                self.max_hitpoints = self.current_hitpoints = die_roll(self.hit_dice[2],
+                                                                       self.hit_dice[0],
+                                                                       self.hit_dice[1])
             except KeyError:
-                errors.append("hp")
+                print("Unable to import HP stat for {0} of type {1}".format(self.name, self.creature_type))
+                print("Unable to load hit dice")
+                print("Input some now?")
+                confirmation = input("(y/N): ")
+                if confirmation.lower() == 'y':
+                    num_hit_die = int(input("number of hit die: "))
+                    die_type = int(input("dietype: "))
+                    modifier = int(input("modifier: "))
+                    self.hit_dice = [die_type, modifier, num_hit_die]
+                    self.max_hitpoints = self.current_hitpoints = die_roll(self.hit_dice[2],
+                                                                           self.hit_dice[0],
+                                                                           self.hit_dice[1])
+                    # Put in some post processing here
+                else:
+                    errors.append("hit_points")
+                    pass
+                errors.append("hitpoints")
                 pass
 
             # Creature speed stats
@@ -204,9 +312,9 @@ class Creature(object):
 
             # Creature saving throws
             try:
-                self.savethrows = creature_data["SAVETHROWS"]
+                self.save_throws = creature_data["SAVETHROWS"]
             except KeyError:
-                errors.append("savethrows")
+                errors.append("save_throws")
                 pass
 
             # Creature args
@@ -236,4 +344,16 @@ class Creature(object):
     def list_actions(self):
         '''List actions available to the creature'''
         #for action_type in actions.keys():
-        return 
+        return
+
+    def debug(self):
+        '''
+           List out attributes that could not imported from the config
+           file
+        '''
+        for error in self.errors:
+            print("Unable to import {0} for {1} type".format(error, self.name))
+
+
+class ConfigOpenError(Exception):
+    pass

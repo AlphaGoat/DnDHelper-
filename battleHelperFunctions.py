@@ -3,7 +3,7 @@ import random
 import pdb
 
 def get_ability_modifer(ability_value):
-    '''Provides the corresponding modifier for a provided 
+    '''Provides the corresponding modifier for a provided
        attribute value
     '''
     modifier = -5
@@ -17,14 +17,16 @@ def get_ability_modifer(ability_value):
 def die_roll(num_die, dtype, modifier):
     '''Basic DnD die roll'''
     roll_value = 0
-    for _ in range(num_die):
-        roll_value += roll_value + random.randint(1,dtype)
+    for i in range(num_die):
+        roll_value = roll_value + random.randint(1,dtype)
+
     roll_value = roll_value + modifier
-    return roll_value 
+
+    return roll_value
 
 
 def order_by_initiative(creature_list):
-    '''Ordering operation (mostly used to order creatures by 
+    '''Ordering operation (mostly used to order creatures by
        initiative
     '''
     # Create an empty list to place ordered creatures
@@ -90,7 +92,7 @@ def select_next_target(curr_creature, character_list):
 
 
 def read_single_keypress():
-   pass 
+   pass
 
 
 

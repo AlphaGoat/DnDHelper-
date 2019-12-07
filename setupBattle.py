@@ -2,6 +2,7 @@ import random
 import sys
 import csv
 import argparse
+import time
 
 # Custom scripts
 import monsterYamlParser as mYP
@@ -21,110 +22,15 @@ parser = argparse.ArgumentParser(description=''''Args to set up the
                 csv file and the number of player characters''')
 parser.add_argument('-c', '--battle_csv', help="""Name of the csv defining
                 the battle scenario""", required=True)
-parser.add_argument('-p', '--players', nargs='+', type=str, 
+parser.add_argument('-p', '--players', type=str, action='append',
             help="Names of human players in battle", required=True)
-#parser.add_argument('-f', metvar='F', help="""Path to the csv defining 
+#parser.add_argument('-f', metvar='F', help="""Path to the csv defining
 #                       the battle scenario""")
-#parser.add_argument('-c', metavar='C', type=str, action='append', nargs='+', 
+#parser.add_argument('-c', metavar='C', type=str, action='append', nargs='+',
 #                       help=)
 #parser.add_argument('-t', metavar='T', type=str, action='append', nargs='+')
 #parser.add_argument('-a', metvar='A', type=str, action='append', nargs='+')
 
-#class WorkerSignals(QObject):
-#    '''Defines signals available from running worker thread.
-#
-#    Supported signals:
-#
-#    finished_sig
-#        No data
-#
-#    error_sig
-#        'tuple' (exctype, value, traceback.format_exec())
-#
-#    img_array_sig
-#        'np.ndarray'
-#
-#    result_sig
-#        `object` data returned from processing
-#    '''
-#    finished_sig = QtCore.pyqtSignal()
-#    error_sig = QtCore.pyqtSignal(tuple)
-#    result_sig = QtCore.pyqtSignal(object)
-#    process_sig = QtCore.pyqtSignal(int)
-#
-#
-#class The_Working(QtCore.QRunnable):
-#	'''Container for work that needs to be done by GUI simultaneously
-#	   (battle spreadsheet, battle map, gui control panel, etc.)
-#	'''
-#	
-#	def __init__(self, fn, mutex, cond, parent=None, *args, **kwargs):
-#		'''The Working class: Handles multiple threads running processes
-#		   in background 		
-#        '''
-#		super(The_Working, self).__init__()	
-#		self.fn = fn
-#		self.mutex = mutex
-#		self.cond = cond
-#		self.parent = parent
-#		#self.sleepFlag = sleepFlag
-#		self.args = args
-#		self.kwargs = kwargs
-#		self.signals = WorkerSignals()
-#
-#		# Internal worker flags
-#		self.processStopSignal = False
-#		self.processIsRunning = False
-#		self.exiting = False
-#
-#		# Add image array signal to list of call backs
-#		self.imgArraySignal = ImageArraySignal()
-#		#self.kwargs['image_callback'] = self.imgArraySignal.curr_img_array
-#
-#	def __del__(self):
-#		self.exiting = True
-#
-#	def isProcessRunning(self):
-#		return self.processIsRunning
-#
-#	def setProcessStopSignal(self, bool):
-#		self.processStopSignal = True
-#	
-#	def run(self):
-#		'''Initialize runner function with passed args and kwargs'''
-#		try:
-#			while self.processStopSignal == False and not self.exiting:
-#				self.fn(self.parent.curr_img_array, thread=self, *self.args, **self.kwargs)
-##						status=self.signals.status
-##						progress=self.signals.progress)
-#				self.mutex.lock()
-#				try: 
-#					self.cond.wait(self.mutex)
-#					pass
-#				finally:
-#					self.mutex.unlock()
-#			self.processStopSignal = False
-#			self.stop.emit(self.processIsRunning)
-#			self.emit(QtCore.SIGNAL('terminated'))
-#
-#		except Exception as ex:
-#			traceback.print_exc() 
-#			exctype, value = sys.exc_info()[:2]
-#			self.signals.error_sig.emit((exctype, value, traceback.format_exc()))
-#		finally:
-#			self.parent.threadsAreRunning = False
-#			self.signals.finished_sig.emit()
-#
-#
-#class TaskManagement(QtCore.QObject):
-#
-#	def __init__(self, parent):
-#		super(Tasks, self).__init__()
-#
-#		self.parent = parent
-#
-#		self.pool = QtCore.QThreadPool()
-#		self.pool.setMaxThreadCount(2)
 
 
 class BattleScenario(object):
@@ -152,12 +58,12 @@ class BattleScenario(object):
         self.ally_list = []
 
         self.neutral_list = []
-        
+
         # ordered list of creatures based on their initiatives
         # (uninitialized until "rollInitiative" method is called)
         self.ordered_creature_list = []
 
-        # Variable that keeps track of the challenge rating of the 
+        # Variable that keeps track of the challenge rating of the
         # battle. Rewards after the battle will be calculated based
         # on this number (see 'determine_battle_challenge_rating
         # method)
@@ -170,14 +76,14 @@ class BattleScenario(object):
         self.battleFlag = 0
 
         # Initialize battle messager object
-        self.bMessager = battleMessages() 
+        self.bMessager = battleMessages()
 
         # Flag telling us whether or not to use spreadsheet gui
         self.use_gui = use_gui
 
-    
+
     def roll_initiative(self):
-        '''Automatically rolls initiatives for all creatures involved in 
+        '''Automatically rolls initiatives for all creatures involved in
            scenario
         '''
 
@@ -243,9 +149,9 @@ class BattleScenario(object):
     def determine_challenge_rating(self):
         '''Determine the challenge rating of the battle based
            on the difficulty ratings of the creatures in the
-           foe list. 
+           foe list.
 
-           NOTE: Unlike the allegiance lists, this rating is 
+           NOTE: Unlike the allegiance lists, this rating is
                  static. The challenge rating, and the subsequent
                  loot and xp awarded after the battle does not
                  change if the player characters are able to remove
@@ -277,7 +183,7 @@ class BattleScenario(object):
            (player actions may cause their allegiance to change
            over the course of the battle
         '''
-        # Initiate loop that terminates at end of NPC's turn 
+        # Initiate loop that terminates at end of NPC's turn
         npc_turn = True
         while npc_turn:
 
@@ -286,22 +192,26 @@ class BattleScenario(object):
             print('\n----------Available Attacks---------------\n')
             attacks_list = []
             attacks_dict = {}
-            config_attacks = npc_character.attacks
+            config_attacks = npc_character.actions['attacks']
             ########### NOTE: May change this later. ##############
             # Really inefficent to have to go through the keys for
             # the dicts returned by npc.character.attacks to find
             # the name of each spell AND THEN DEFINE A NEW DICT
             # WITH THOSE NAMES AS KEYS. There's got to be a better
-            # way to set up the yaml file so we don't have to do 
+            # way to set up the yaml file so we don't have to do
             # that...
             for attack in config_attacks:
-                pdb.set_trace()
+                #pdb.set_trace()
                 attack_name = attack['NAME']
-                attack_dict[attack_name] = attack
+                attacks_dict[attack_name] = attack
 
-            for i, attack_type in enumerate(attacks_dict.keys()):
-                attacks_list.append(attack_type)
-                print('\n{0}) {1}'.format(i, attack_type))
+            try:
+                for i, attack_type in enumerate(attacks_dict.keys()):
+                    attacks_list.append(attack_type)
+                    print('\n{0}) {1}'.format(i, attack_type))
+            except TypeError:
+                print("No attacks available")
+
             print('\n----------Available Spells----------------\n')
             spells_list = list()
             spells_dict = npc_character.actions['spells']
@@ -309,17 +219,17 @@ class BattleScenario(object):
                 spells_list.append(spell_type)
                 print('\n{0}) {1}'.format(j, spell_type))
 
-            # Does the DM want to see a detailed description of the 
+            # Does the DM want to see a detailed description of the
             # actions presented?
             print('''\nDo you want to see more details of actions and
-                     spells? 
+                     spells?
                      \nFormat A1-A# for actions
                      \nFormat S1-S# for spells
                      \ntype 'continue' to choose action
                   '''
                  )
             see_details = True
-            while see_details: 
+            while see_details:
                 what_next = input('\nChoose action: ')
 
                 if what_next[0] == 'A':
@@ -397,13 +307,13 @@ class BattleScenario(object):
                 return
             else:
                 print('\nError: input not recognized. Try again')
-                continue        
+                continue
 
 
     def actions(self, currCreat):
         '''determines which creature's turn it is and presents lists of attacks
            for that creature.
-        ''' 
+        '''
         # Fetch number of actions available to the creature
         numActions = currCreat["BONUS ACTIONS"]
 
@@ -413,18 +323,18 @@ class BattleScenario(object):
 
         # Fetch the attacks available to the creature
         attacks = currCreat["ATTACKS"]
-        
+
         # Fetch the spells available to the creature
         spells = currCreat["SPELLS"]
 
         i = 0
-        for attack in attacks:  
+        for attack in attacks:
             actions_list.append(attack)
 
         for spell in spells:
             actions_list.append(spell)
 
-        # Display the options available to the player   
+        # Display the options available to the player
         for action in actions_list:
             print(action + '\n')
             affirmation = raw_input("More info? (Y/n): ")
@@ -437,7 +347,7 @@ class BattleScenario(object):
                 elif affirmation != "N" or "n" or "No" or "no":
                     print("Error: input not recognized\n")
                     affirmation = raw_input()
-                    
+
 
         for _ in range(numActions):
             print("Action available\n")
@@ -459,7 +369,7 @@ class BattleScenario(object):
             target = self.orderedCreatureList[idy]
             numDie = actionName["DAMAGE"]["number"]
             dtype = actionName["DAMAGE"]["dietype"]
-            modifier = actionName["DAMAGE"]["modifier"] 
+            modifier = actionName["DAMAGE"]["modifier"]
 
             self.actionRoll(numDie, dtype, modifier, actionName,
                         target, effect=effect)
@@ -495,29 +405,33 @@ class BattleScenario(object):
         return
 
 
-    def playerActionRoll(self, rollValue, target, effect="damage"):
-        '''Action performed by the player. The only difference between 
-           this function and action roll is that the rollValue is 
+    def player_action_roll(self, roll_value, target, effect="damage"):
+        '''Action performed by the player. The only difference between
+           this function and action roll is that the rollValue is
            determined by physical roll of the dice rather than an
            internal algorithm
         '''
         if effect == "damage":
-            print("{0} damage dealt to {1}\n".format(rollValue, target))
-            target.currHP = targetCurrHP - rollValue
-            if target.currHP <= 0:
+            print("{0} damage dealt to {1}\n".format(roll_value, target.name))
+            print("type target.current_hitpoints: ", target.current_hitpoints)
+            target.current_hitpoints = target.current_hitpoints - roll_value
+            if target.current_hitpoints <= 0:
                 print("{0} is dead\n".format(target.name))
                 target.dead = True
 
         elif effect == "heal":
-            print("{0} healed for {1}hp\n".format(target, rollValue))
-            target.currHP = target.currHP + roll
-            if target.currHP >= target.maxHP:
-                target.currHP = target.maxHP
+            print("{0} healed for {1}hp\n".format(target.name, roll_value))
+            target.currHP = target.current_hitpoints + roll_value
+            if target.current_hitpoints >= target.max_hitpoints:
+                target.current_hitpoints = target.max_hitpoints
         else:
             print("{0} applied to {1} for {2} points\n".format(
-                                effect, target, roll))
+                                effect, target, roll_value))
+
+        print("exiting player_action roll function")
+
         return
-        
+
 
 #    def battleFlow(self):
 #        for it in iterator:
@@ -541,8 +455,8 @@ class BattleScenario(object):
                 ++ self.foes
             elif creat.allegiance == 'neutral':
                 ++ self.swiss
-            
-        # Battle loop:  
+
+        # Battle loop:
         while True:
             # Check that there are still enemies on the field
             for creat in self.orderedCreatureList:
@@ -574,33 +488,52 @@ class BattleScenario(object):
            in initiative list
         '''
         print("It is now ", player.name, "'s turn\n")
-        while True:
 
-            # If character is dead, skip turn
-            print("\nSkip turn?")
-            response = input(" (y/n): \n")
-            if response.lower() == 'y' or response.lower() == 'yes': 
-                pdb.set_trace()
-                return
+        # Do you want to skip this player's turn (i.e, they
+        # are incapacitated in some matter, but not unconscious)
+        print("\nSkip turn?")
+        response = input(" (y/N): \n")
+
+        # Go back to script if the answer is 'yes', and move to
+        # next character
+        if response.lower() == 'y' or response.lower() == 'yes':
+            return 1
+
+        player_turn = True
+        while player_turn:
 
             # Determine if the target of the action is another character
             # If it is, determine if the target is an npc. If it is, the
             # system will keep track of it. Otherwise, players keep track
-            targetedAction = input("Targeted Action? (y/n): ")
-            if targetedAction == "y" or targetedAction == "Y": 
+            targetedAction = request_confirmation_from_user("Targeted action?")
+            if targetedAction:
                 print("List of characters in battle: \n")
                 target_character_dict = {}
                 for i, key in enumerate(self.creatureDict.keys()):
                     target_character_dict[i] = key
                     print("{}) {}\n".format(i, key))
-                character_ID = input("Target character ID: ")
-                character_key = target_character_dict[character_ID]
-                target_character = self.creatureDict[character_key] 
-                rollValue = input("Input value of roll: ")
+
+                # Check to see if input character ID is valid
+                while True:
+                    try:
+                        character_ID = int(input("Target character ID: "))
+                    except ValueError:
+                        print("I'm sorry, that input was not understood. Try again")
+                        continue
+
+                    try:
+                        character_key = target_character_dict[character_ID]
+                        break
+                    except KeyError:
+                        print("Input ID does not correspond with any listed character. Try again")
+
+                target = self.creatureDict[character_key]
+                rollValue = int(input("Input value of roll: "))
                 effect = input("effect (damage/heal/etc.): ")
-                playerRoll(rollValue, target, effect=effect)                
-                playerTurn = bool(input("Continue turn?: "))
-        
+                self.player_action_roll(rollValue, target, effect=effect)
+
+                player_turn = request_confirmation_from_user("Continue turn?")
+
 
     def check_for_allegiance_change(self, character):
         print("\nChange allegiance for {}?".format(character.name))
@@ -657,6 +590,19 @@ class BattleScenario(object):
            (e.g., rolling initiative, rolling attacks, letting players
            know of their turn order
         '''
+        # First check to see if there are any debugging actions the DM
+        # needs to take before beginning battle (i.e., manually inputting
+        # attribute values for npcs that had configuration errors
+        for _, creature in creature_dict.items():
+
+            for error in creature.errors:
+                prints("""Failed to import {0} statistic for {1}
+                          of type {2}""".format(error, creature.name, creature.creature_type))
+
+
+
+
+        print("-----------Initiate Battle-----------\n")
         # First action: Roll initiative for all npcs
         self.roll_initiative()
 
@@ -674,7 +620,7 @@ class BattleScenario(object):
                             self.challenge_rating))
 
         # Check if we want to initialize battle spreadsheet gui. If we do,
-        # 
+        #
 
         # We are now ready for the battle phase. Initiate loop that does not
         # terminate until all members of the foe list are defeated
@@ -686,7 +632,7 @@ class BattleScenario(object):
             # Check if character is dead
             if nextCharacter.dead == True:
                 # Perform check to see if all characters of 'foe'
-                # allegiance are dead or defeated. If so, end battle 
+                # allegiance are dead or defeated. If so, end battle
                 # loop and run loot generator:
                 if self.check_if_all_foes_dead() == True:
                     break
@@ -717,10 +663,22 @@ class BattleScenario(object):
                         if nextCharacter.failed_save_throws == 3:
                             print('\n' + bMessager._fail_save_throws_msg(
                                             nextCharacter.name))
-                        continue 
+                        continue
+
+                # If character has failed all saving throws already,
+                # display death message
+                elif nextCharacter.failed_save_throws > 3:
+                    print("{} is dead. Not surprising, scrub".format(nextCharacter))
+                    continue
+
+            # Once death checks are complete, display message telling
+            # user whose turn it is
+            print("It is now {}'s turn".format(nextCharacter.name))
+            time.sleep(1.0)
 
             # Check if the character has had a change of allegiance
             self.check_for_allegiance_change(nextCharacter)
+            time.sleep(1.0)
 
             idx += 1
             print(idx)
@@ -768,8 +726,8 @@ class battleMessages():
 
     def _succeed_save_throws_msg(self, name):
         return """
-                  {} has made 3 saving throws! They are alive 
-                  (for now), but they are still incapacitated. They will 
+                  {} has made 3 saving throws! They are alive
+                  (for now), but they are still incapacitated. They will
                   need to wait until the end of the battle to be fully
                   revived
                """
@@ -783,14 +741,14 @@ class battleMessages():
     def _victory_message(self):
         return """You and your comrades are victorious! Oh, joyous day!"""
 
-    def _display_challenge_rating(self, challenge_rating): 
+    def _display_challenge_rating(self, challenge_rating):
         return "Calculated Challenge Rating: {}".format(
                                         challenge_rating)
 
     # Helper messages: let DM know what part of the script is finished,
     # or whether something went wrong loading the battle
     def _errorLoadingConfig(self, name, creatType):
-        return """Error: creature config failed to load for {0} of 
+        return """Error: creature config failed to load for {0} of
                 creature type {1}""".format(name, creatType)
 
     def ask_player_to_roll_initiative(self, player_name):
@@ -798,13 +756,13 @@ class battleMessages():
             " (d20 + dex modifier"
 
     def npc_turn_initiate(self, npc_name):
-        return "It is NPC {} turn. Choose an action ".format(npc_name) + \
+        return "It is NPC {}'s turn. Choose an action ".format(npc_name) + \
                 'for them'
 
 
-class playerCharacter(object):
+class PlayerCharacter(object):
     '''Resembles the Creature class, but only has a few of the
-       attributes for station keeping 
+       attributes for station keeping
     '''
     def __init__(self, name):
        self.name = name
@@ -816,9 +774,36 @@ class playerCharacter(object):
        self.npc = 0
        self.dead = False
 
-       
+
     def switchAllegiance(self, allegiance='foe'):
         self.allegiance = allegiance
+
+def request_confirmation_from_user(message_str):
+    """
+       Helper function for recieving confirmation (yes/no) from
+       users.
+    """
+    # Strip question mark from message_str. We'll add it back in later
+    message_str = message_str.strip('?')
+
+    # Initiate loop that continues until user inputs a recognizeable
+    # response
+    while True:
+
+        # Display message to user and ask for input
+        response = input(message_str + "(y/N)?: ")
+
+        # Check for positive responses
+        if response.lower() == 'y' or response.lower() == 'yes':
+            return 1
+        # Check for negative responses
+        elif response.lower() == 'n' or response.lower() == 'no':
+            return 0
+        # If response was none of the above, then it is unrecognized.
+        # Restart loop
+        else:
+            pass
+
 
 
 if __name__ == '__main__':
@@ -827,9 +812,27 @@ if __name__ == '__main__':
     csv_file = args.battle_csv
     # Retrieve list of dicts with npc characteristics
     npc_creatures = bCP.parse_battle_csv(csv_file)
-    player_characters = args.players
+    print("npc_creatures: ", npc_creatures)
+#    print("args.players: ", args.players)
+#    print("type of args.players: ", type(args.players))
+#    print("len of args.players: ", len(args.players))
+#
+#    for i, player in enumerate(args.players):
+#        print("player %d: %s" % (i, player))
+#
+#    player_str = ''.join(str(char) for char in args.players)
+#    print("player_str: ", player_str)
+#    print("type of player_str: ", type(player_str))
+#    #print("len of player_str: ", len(player_str))
+#
+    print("element 0 of args.players: ", args.players[0])
+    print("type of elem 0 of args.players: ", type(args.players[0]))
+    player_characters = args.players[0].split(',')
+    player_characters = [name.strip(',').strip() for name in player_characters]
+#
+#    print("player_characters: ", player_characters)
 
-    creatureDict = dict()
+    creature_dict = dict()
 
     # Go for the list of creature dicts provided in the
     # battle csv file and feed it to the Creature class
@@ -841,7 +844,7 @@ if __name__ == '__main__':
         creature_type = npc_creature['type']
         #pdb.set_trace()
         allegiance = npc_creature['allegiance']
-        creature_stats = mYP.Creature(name, 
+        creature_stats = mYP.Creature(name,
                                     creature_type, allegiance=allegiance,
                                     )
         #pdb.set_trace()
@@ -849,25 +852,25 @@ if __name__ == '__main__':
             print("Exiting battle setup...")
             exit_battle = True
             break
-             
+
         else:
-            creatureDict[npc_creature['name']] = creature_stats
-   
+            creature_dict[npc_creature['name']] = creature_stats
+
     if not exit_battle:
-        playerDict = dict()
+        player_dict = dict()
         # Create playerCharacter objects for all input players and add
         # to creature dict
 
         #pdb.set_trace()
 
         for player in player_characters:
-            playerDict[player] = playerCharacter(player) 
+            player_dict[player] = PlayerCharacter(player)
 
-        curr_battle_scenario = BattleScenario(creatureDict, playerDict)
+        curr_battle_scenario = BattleScenario(creature_dict, player_dict)
 
         # Initialize battle spreadsheet object
 #        battle_spreadsheet = cHS.BattleInfoSpreadsheet(curr_battle_scenario,
-#                        'test_battle', 
+#                        'test_battle',
 
         # And finally...initialize battle script
         curr_battle_scenario.script()
@@ -883,7 +886,7 @@ if __name__ == '__main__':
 #               scenarioCSV+'.csv', 'r') as f:
 #           reader = csv.reader(f)
 #           for row in reader:
-#               names.append(row[0])                
+#               names.append(row[0])
 #               types.append(row[1])
 #               allegiances.append(row[2])
 #   # Add in info from the command line
@@ -891,16 +894,16 @@ if __name__ == '__main__':
 #   types.append(creatType for creatType in creatTypes)
 #   allegiances.append(creatAllegiance for creatAllegiance in creatAllegiances)
 #   characteristics = [names, types, allegiances]
-#   
+#
 #   creatDict = dict()
-#   for creatName, creatType, allegiance in zip(characteristics): 
+#   for creatName, creatType, allegiance in zip(characteristics):
 #       ymlFile = creatType + '.yml'
 #       creatureMuaHaHa = mYP.Creature(ymlFile, allegiance=allegiance)
 #       creatureMuaHaHa.openYaml()
 #       creatureMuaHaHa.importFeatures()
 #       creatureMuaHaHa.allegiance = allegiance
 #       creatDict[creatName] = creatureMuaHaHa
-#   # Well guess what? Now we get to load this shizzle into battlefohizzle  
+#   # Well guess what? Now we get to load this shizzle into battlefohizzle
 #   currBattleBitches = BattleScenario(creatDict)
 #   currrBattleBitches.initBattleSequence()
 
