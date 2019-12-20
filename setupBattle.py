@@ -215,35 +215,53 @@ class BattleScenario(object):
             print('\n----------Available Spells----------------\n')
             spells_list = list()
             spells_dict = npc_character.actions['spells']
-            for j, spell_type in enumerate(spells_dict.keys()):
-                spells_list.append(spell_type)
-                print('\n{0}) {1}'.format(j, spell_type))
+            if spells_dict:
+                for j, spell_type in enumerate(spells_dict.keys()):
+                    spells_list.append(spell_type)
+                    print('\n{0}) {1}'.format(j, spell_type))
 
             # Does the DM want to see a detailed description of the
             # actions presented?
-            print('''\nDo you want to see more details of actions and
-                     spells?
-                     \nFormat A1-A# for actions
-                     \nFormat S1-S# for spells
-                     \ntype 'continue' to choose action
-                  '''
-                 )
+            if attacks_list and spells_list:
+                print('''\nDo you want to see more details of attacks and
+                         spells?
+                         \nFormat A0-A# for attacks
+                         \nFormat S0-S# for spells
+                         \ntype 'continue' to choose action
+                      '''
+                     )
+            elif attacks_list and not spells_list:
+                print('''\nDo you want to see more details of attacks?
+                         \nFormat A0-A# for attacks
+                         \ntype 'continue' to choose action
+                      '''
+                     )
+            else:
+                print('''\nDo you want to see more details of
+                         spells?
+                         \nFormat S0-S# for spells
+                         \ntype 'continue' to choose action
+                      '''
+                     )
+
             see_details = True
             while see_details:
                 what_next = input('\nChoose action: ')
 
                 if what_next[0] == 'A':
                     try:
-                        idx = what_next[1]
-                        print(attacks_list[idx]['DESCRIPTION'])
+                        idx = int(what_next[1])
+                        desc_attack = attacks_list[idx]
+                        print(attacks_dict[desc_attack]['DESCRIPTION'])
                     except KeyError:
                         print('\nError: index not recognized. Try again')
                         continue
 
                 elif what_next[0] == 'S':
                     try:
-                        idx = what_next[1]
-                        print(spells_list[idx]['DESCRIPTION'])
+                        idx = int(what_next[1])
+                        desc_spell = spells_list[idx]
+                        print(spells_dict[idx]['DESCRIPTION'])
                     except KeyError:
                         print('\nError: index not recognized. Try again')
                         continue
@@ -263,7 +281,7 @@ class BattleScenario(object):
             next_action_id = input("\n: ")
 
             if next_action_id[0] == 'A':
-                idx = next_action_id[1]
+                idx = int(next_action_id[1])
                 try:
                     next_action_key = attacks_list[idx]
                     next_action = attacks_dict[next_action_key]
@@ -272,7 +290,7 @@ class BattleScenario(object):
                     continue
 
             elif next_action_id[0] == 'S':
-                idx = next_action_id[1]
+                idx = int(next_action_id[1])
                 try:
                     next_action_key = spells_list[idx]
                     next_action = spells_dict[next_action_key]

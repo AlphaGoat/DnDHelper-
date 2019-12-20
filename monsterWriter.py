@@ -1,4 +1,5 @@
 import yaml
+import json
 
 def setup_yaml():
     """https://stackoverflow.com/a/8661021"""
@@ -16,7 +17,7 @@ def writeMonsterConfig(name, creatureType, AC, HP,
     for _,item in enumerate(args):
         items.append(item)
 
-    kwargDict = {}	
+    kwargDict = {}
     for name,value in kwargs.items():
         kwargDict[name] = value
 
@@ -52,28 +53,86 @@ def writeMonsterConfig(name, creatureType, AC, HP,
 
     with open('/home/peter/Python_Files/DnDHelper/MonsterConfigFiles/'+
                 name + '.yml', 'w') as yamlFile:
-        yaml.dump(data, yamlFile, default_flow_style=False) 
+        yaml.dump(data, yamlFile, default_flow_style=False)
+
+
+def writeMonsterConfigJson(name,
+                           creatureType,
+                           AC,
+                           HP,
+		                   speed,
+                           challenge,
+                           XP,
+                           abilities,
+		                   savingThrows,
+                           resistances,
+                           immunities,
+		                   attacks,
+                           spells,
+                           *args,
+                           **kwargs):
+
+    items = []
+    for _, item in enumerate(args):
+        items.append(item)
+
+    kwargDict = {}
+    for name, value in kwargs.items():
+        kwargDict[name] = value
+
+    # Place all compiled actions into an overarching 'action'
+    # dic. These will represent all actions a creature is able
+    # to take during their turn
+    actions = {
+               'attacks'       : attacks,
+               'spells'        : spells,
+               'bonus_actions' : bonus_actions
+               }
+
+    # Handle the dictionary of attacks provided:
+    data = {
+        "NAME" : name,
+        "CREATURETYPE" : creatureType,
+        "ARMORCLASS" : AC,
+        "HITPOINTS" : {
+            "number" : HP[0],
+            "dieType" : HP[1],
+            "modifer" : HP[2],
+        },
+        "SPEED" : speed,
+        "CHALLENGE" : challenge,
+        "EXPERIENCEPOINTS" : XP,
+        "ABILITIES" : abilities,
+        "SAVETHROWS" : savingThrows,
+        "ATTACKS" : attacks,
+        "SPELLS" : spells,
+        "ADDINFO" : kwargDict,
+        "ARGS" : items
+    }
+
+    with open(flags.config_directory + name + '.json', 'w') as json_file:
+        json.dump(data, json_file)
 
 
 def handleAttack(name, hit, reach, aoe, damage, numTargets, desc,
 				  bonus=False, *args, **kwargs):
 
-    attkDmg = dict(
-                   number=damage[0],
-                   dieType=damage[1],
-                   modifier=damage[2]
-                  )
+    attkDmg = {
+        "number":damage[0],
+        "dietype":damage[1],
+        "modifier":damage[2]
+    }
 
-    attacks = dict(
-                   NAME=name,
-                   HIT=hit,
-                   REACH=reach,
-                   AOE=aoe,
-                   ATTKDMG=attkDmg,
-                   NUMTARGETS=numTargets,
-                   BONUS=bonus,
-                   DESCRIPTION=desc
-                  )
+    attacks = {
+        "NAME" : name,
+        "HIT" : hit,
+        "REACH" : reach,
+        "AOE" : aoe,
+        "ATTKDMG" : attkDmg,
+        "NUMTARGETS" : numTargets,
+        "BONUS" : bonus,
+        "DESCRIPTION" : desc,
+    }
 
     argcounter = 0
     for arg in args:
@@ -87,38 +146,38 @@ def handleAttack(name, hit, reach, aoe, damage, numTargets, desc,
     return attacks
 
 
-def handleSpells(name, castingTime, castRange, components, duration,
+def handleSpells(name, desc, castingTime, castRange, components, duration,
 				 aoe, damage, heal=False, bonus=False,
-                                 desc, *args, **kwargs):
+                                  *args, **kwargs):
 
-	spellDmg = dict(
-				number=damage[0],
-				dieType=damage[1],
-				modifier=damage[2],
-				)
+    spellDmg = {
+        "number" : damage[0],
+        "dieType" : damage[1],
+        "modifier" : damage[2],
+    }
 
-	spells = dict(
-				NAME=name,
-				CASTINGTIME=castingTime,
-				CASTRANGE=castRange,
-				COMPONENTS=components,
-				DURATION=duration,
-				AOE=aoe,
-				DAMAGE=spellDmg,
-                                HEAL=heal,
-                                BONUS=bonus,
-				DESC=desc,
-				)
+    spells = {
+        "NAME" : name,
+        "CASTINGTIME" : castingTime,
+        "CASTRANGE" : castRange,
+        "COMPONENTS" : components,
+        "DURATION" : duration,
+        "AOE" : aoe,
+        "DAMAGE" : spellDmg,
+        "HEAL" : heal,
+        "BONUS" : bonus,
+        "DESC" : desc,
+    }
 
-	argcounter = 0
-	for arg in args:
-		spells["ADDATTKINFO"+argcounter] = arg
-		argcounter += 1
+    argcounter = 0
+    for arg in args:
+        spells["ADDATTKINFO"+argcounter] = arg
+        argcounter += 1
 
-	for key in kwargs:
-		spells[key] = kwargs[key]
+    for key in kwargs:
+        spells[key] = kwargs[key]
 
-	return spells
+    return spells
 
 
 #def handleBonusActions(name, desc):
