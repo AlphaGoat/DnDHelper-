@@ -146,12 +146,18 @@ def monster_manual_lookup(manual_file_path, monster):
             ac_page_number += 1
 
             # Check if we have passed the five page limit
-            if (ac_page_number - ) > 5:
+            if (ac_page_number - attribute_page_number) > 3:
+                # Go back to first page of the "creature" and
+                # see if we may have missed it
+                ac_page_number = page_number
+                ac_page = pdf_reader.getPage(ac_page_number)
+                ac_text = ac_page.extractText()
+                continue
+
+            elif (ac_page_number - page_number) > 5 and (ac_page_number - attribute_page_number) > 2:
                 error_dict["armor_class"] = 0
                 break
 
-            ac_page = pdf_reader.getPage(ac_page_number)
-            ac_text = ac_page.extractText()
 
     monster_info_dict["armor_class"] = ac_dict
 
