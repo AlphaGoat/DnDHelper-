@@ -152,34 +152,108 @@ def parse_description_text(monster_desc_text):
     on a given creature and returns information that we need (stats,
     action and spell descriptions, etc.)
     """
-    print(monster_desc_text)
+    # TODO: find some way to deal with newline characters
+    #       (they are seriously messing everything up
+    print(monster_desc_text.encode())
 
     # Retrieve creatures attributes
     attribute_list = ["strength", "dexterity", "constitution",
-                      "intelligence", "wisdom", "charisma"]
+                      "intelligence", "wisdom"] #, "charisma"]
 
     attribute_dict = {}
     for attribute in attribute_list:
         # Perform regex to find stats in description text:
+        # TODO: find a way to get charisma working (it has to do
+        #       with the new line character in the text
         print("attribute: ", attribute[:3].upper())
-        r_attribute_str = r'{}(.*?)\)'.format(attribute[:3].upper())
-        result = re.search(r_attribute_str, monster_desc_text)
+        r_attribute_str = r'{}(.*?)\s*\n?\)'.format(attribute[:3].upper())
+        result = re.search(r_attribute_str, monster_desc_text, re.M)
+
+        print("result.group(): ", result.group())
 
         # Perform further post processing on the returned string
         # to extricate base state value and modifier
         split_str = result.group().split(' ')
-        print("split_str: ", split_str)
 
         base_stat = split_str[1]
 
-        modifier = re.search(r'(?<=\(\+)(.*?)(?=\))', split_str[2])
+        modifier = re.search(r'(\-|\+)(.*?)[^\)]', split_str[2])
 
-        print("modifier: ", modifier.group())
 
         attribute_stats = {
             'base_stat': base_stat,
             'modifier': modifier,
         }
+
+    # MATCH FOR ARMOR CLASS
+    # Retrieve armor class
+    r_armor_class_str = r'Armor Class(.*?)\)'
+    result_ac = re.search(r_armor_class_str, monster_desc_text, re.M)
+
+    # find the armor class value by excluding values after '('
+    ac_value_match = re.search(r'\s(.*?)[&\s\(]', result_ac.group(1))
+    ac_value = int(ac_value_match.group().strip())
+
+    ac_type_match = re.search(r'\((.*?)\)', result_ac.group())
+    ac_type = ac_type_match.group(1)
+
+    armor_class = {
+        'value': ac_value,
+        'type': ac_type
+    }
+
+    # MATCH FOR ALIGNMENT
+    # list out all possible alignments the creature could have
+    possible_alignments = ['lawful good', 'lawful neutral', 'lawful evil',
+                           'neutral good', 'neutral', 'neutral evil',
+                           'chaotic good', 'chaotic neutral', 'chaotic evil']
+
+    # Create a reg expression that matches for any of them
+    alignment_pattern = "{}".format(possible_alignments[0])
+    for possible_alignment in possible_alignments[1:]:
+        alignment_pattern = alignment_pattern + "|{}".format(possible_alignment)
+
+    r_alignment_pattern = r"" + alignment_pattern
+
+    # use reg expression to find the alignment of our beast!
+    r_alignment_match = re.search(r_alignment_pattern, monster_desc_text, re.M)
+    alignment = r_alignment_match.group()
+
+    if alignment == 'chaotic evil':
+        print("You naughty boy!")
+
+    # Match for creature types
+    # Following similar pattern as with alignments, list out all possible
+    # creatures types to match with
+    # TODO: add some functionality that allows the input of custom creature types
+    possible_creature_types = ["Aberration", "Beast", "Celestial", "Construct", "Dragon",
+                               "Elemental", "Fey", "Fiend", "Giant", "Humanoid", "Monstrosity",
+                               "Ooze", "Plant", "Undead"]
+
+    creature_type_pattern = "{}".format(possible_creature_types[0])
+    for possible_creature_type in possible_creature_types[1:]:
+        creature_type_pattern = creature_type_pattern + "|{}".format(possible_creature_type)
+
+    r_creature_type_pattern = r". (?i)" + creature_type_pattern + ',\s' + alignment
+    print("creature_type_pattern: ", creature_type_pattern)
+
+
+    # use reg expression to find the creature type of our beast!
+    r_creature_type_match = re.search(". " + creature_type_pattern + ',\s' + alignment,
+                                      monster_desc_text, re.M | re.IGNORECASE)
+    creature_type = r_creature_type_match.group()
+
+    print("creature_type: ", creature_type)
+
+
+
+
+
+
+
+
+
+
 
 
 
