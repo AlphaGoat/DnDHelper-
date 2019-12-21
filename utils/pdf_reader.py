@@ -202,6 +202,32 @@ def parse_description_text(monster_desc_text):
         'type': ac_type
     }
 
+    # MATCH FOR HITPOINTS
+    r_hitpoints_pattern = r'Hit Points (.*?)\)'
+    hitpoints_match = re.search(r_hitpoints_pattern, monster_desc_text, re.M)
+    s_hitpoints = hitpoints_match.group()
+    print("s_hitpoints: ", s_hitpoints)
+
+    # Refine found expression further to get base hitpoints and die
+    base_hitpoints = int(re.search('Hit Points (.*?)\(', s_hitpoints).group(1).strip())
+    print("base_hitpoints: ", base_hitpoints)
+
+    # Determine modifier, number of die, and die type
+    hitpoints_die_stats = re.search('\((.*?)\)', s_hitpoints).group(1)
+    die_stats_strings = hitpoints_die_stats.split(' ')
+    modifier = int(die_stats_strings[2])
+    num_die, die_type = [int(stat) for stat in die_stats_strings[0].split('d')]
+
+    # Incorporate all info we need about creature hitpoints in dictionary
+    hitpoints = {
+        'base_hitpoints': base_hitpoints,
+        'die_stats': {
+            'num_die': num_die,
+            'die_type': die_type,
+            'modifier': modifier
+        }
+    }
+
     # MATCH FOR ALIGNMENT
     # list out all possible alignments the creature could have
     possible_alignments = ['lawful good', 'lawful neutral', 'lawful evil',
@@ -244,6 +270,8 @@ def parse_description_text(monster_desc_text):
     creature_type = r_creature_type_match.group()
 
     print("creature_type: ", creature_type)
+
+    # Grab languages spoken by the creature
 
 
 
