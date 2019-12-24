@@ -72,7 +72,7 @@ def monster_manual_lookup(manual_file_path, monster):
         text = page.extractText().replace('\n','')
         print("creature text: ", text)
 
-        return page_number, pdf_reader
+        return page_number
 
 def find_index_by_value(outlines, value):
     """
@@ -333,16 +333,80 @@ def fetch_creature_type(text, alignment):
 
     # use reg expression to find the creature type of our beast!
     r_creature_type_match = re.search(". " + creature_type_pattern + ',\s' + alignment,
-                                      monster_desc_text, re.M | re.IGNORECASE)
-    creature_type = r_creature_type_match.group()
+                                      text, re.M | re.IGNORECASE)
 
-    print("creature_type: ", creature_type)
+    try:
+        creature_type = r_creature_type_match.group()
 
-def fetch_known_languages(text):
-    # Grab languages spoken by the creature
-    pass
+    except AttributeError:
+        creature_type = None
 
-def fetch_wrapper(creature_page_number, pdf_reader):
+    if not creature_type:
+        print("No creature_type returned")
+        return creature_type, 0
+
+    else:
+        print("creature_type: ", creature_type)
+        return creature_type, 1
+
+def fetch_known_languages(bag_of_words):
+    """
+    Grab languages spoken by the creature
+    """
+    # No regexes needed for this pattern!
+    # Convert the presented text into a 'bag of words' (i.e, a list of words)
+    #bag_of_words = text.split()
+
+    # Find the index of the first instance of the word 'Languages' in the list
+    language_label_index = bag_of_words.index('Languages')
+
+    # Find the index of the first instance of the world "Challenge" in the list
+    challenge_label_index = bag_of_words.index('Challenge')
+
+    # The languages the creature speaks are the words between these two indices
+    start_languages_index = language_label_index + 1
+    end_languages_index = challenge_label_index - 1
+
+
+    print("start_languages_index: ", start_languages_index)
+    print("end_languages_index: ", end_languages_index)
+
+    # If the starting language index is the same as the end,
+    # then the creature only speaks one language
+    if start_languages_index == end_languages_index:
+        languages = bag_of_words[start_languages_index]
+
+    else:
+        # pre-initialize list to store all languages we parse
+        languages = []
+
+        for i in range(start_languages_index, challenge_label_index):
+            languages.append(bag_of_words[i])
+
+    # Check to see if we actually grabbed anything (i.e., the list is populated)
+    if languages:
+        print("return languages: ", languages)
+        return languages, 1
+
+    else:
+        print("no languages returned")
+        return languages, 0
+
+def fetch_challenge_rating_and_xp(bag_of_words):
+    """
+    Grab the challenge rating and experience points
+    of a creature from a provided 'bag of words'
+    (ordered list of words in text)
+    """
+    # Find the index of the first instance of the word "Challenge"
+    challenge_label_index = bag_of_words.index('Challenge')
+
+
+
+
+
+
+def fetch_wrapper(monster_manual_path, creature_page_number):
     """
     Wrapper function to iterate over page numbers until
     the desired creture trait we want to fetch has been found
@@ -363,80 +427,100 @@ def fetch_wrapper(creature_page_number, pdf_reader):
 
     # list of traits that we would like to fetch for creature
     trait_list = ['attributes', 'armor_class', 'hit_points',
-                  'alignment', 'creature_type',]
+                  'alignment', 'creature_type', 'languages',
+                  'passive_perception', ]
 
+    # Open up Monster Manual pdf and initialize a new reader
+    with open(monster_manual_path, 'rb') as pdf:
 
-    for trait in trait_list:
-        # Initialize loop to grab all desired traits of a given creature
-        pass_code = 0
-        trait_page_number = creature_page_number
+        # Create a pdf reader object
+        pdf_reader = PyPDF2.PdfFileReader(pdf)
 
-        # Initialize empty dict to keep track of traits we are unable to
-        # fetch
-        error_dict = {}
+        for trait in trait_list:
+            # Initialize loop to grab all desired traits of a given creature
+            pass_code = 0
+            trait_page_number = creature_page_number
 
-        # Initialize empty dict for atttributes
-        if trait == 'attributes':
-            attribute_dict = {}
+            # Initialize empty dict to keep track of traits we are unable to
+            # fetch
+            error_dict = {}
 
-        while not pass_code:
-
-            trait_page = pdf_reader.getPage(trait_page_number)
-            trait_text = trait_page.extractText().replace('\n','')
-
-            # Fetch attributes
+            # Initialize empty dict for atttributes
             if trait == 'attributes':
+                attribute_dict = {}
 
-                attribute_dict, pass_code = fetch_attributes(trait_text,
-                                                             attribute_dict=attribute_dict)
+            while not pass_code:
 
-            # Fetch armor class
-            elif trait == 'armor_class':
+                trait_page = pdf_reader.getPage(trait_page_number)
+                print("trait_page_number: ", trait_page_number)
+                trait_text = trait_page.extractText().replace('\n','')
 
-                armor_class, pass_code = fetch_armor_class(trait_text)
+                # Fetch attributes
+                if trait == 'attributes':
 
-            # Fetch hit points
-            elif trait == 'hit_points':
+                    attribute_dict, pass_code = fetch_attributes(trait_text,
+                                                                 attribute_dict=attribute_dict)
 
-                hit_points, pass_code = fetch_hit_points(trait_text)
+                # Fetch armor class
+                elif trait == 'armor_class':
 
-            # Fetch alignment
-            elif trait == 'alignment':
+                    armor_class, pass_code = fetch_armor_class(trait_text)
 
-                alignment, pass_code = fetch_alignment(trait_text)
+                # Fetch hit points
+                elif trait == 'hit_points':
 
-            elif trait == 'creature_type':
+                    hit_points, pass_code = fetch_hit_points(trait_text)
 
-                creature_type, pass_score = fetch_creature_type(trait_text)
+                # Fetch alignment
+                elif trait == 'alignment':
 
-            # see if pass code has been issued. If not, increment page
-            # number by one and fetch next page of text to shift through
-            if not pass_code:
-                trait_page_number += 1
+                    alignment, pass_code = fetch_alignment(trait_text)
 
-                # If we have gone five pages without seeing anything, issue
-                # error code for attributes and continue
-                if (trait_page_number - creature_page_number) > 5:
+                elif trait == 'creature_type':
 
-                    # Issue error codes for specific attributes we were unable
-                    # to fetch
-                    if trait == 'attributes':
-                        error_dict['attributes'] = {}
+                    creature_type, pass_code = fetch_creature_type(trait_text,
+                                                                    alignment)
+                    print("pass_score after creature_type: ", pass_code)
 
-                        for key in attribute_dict.keys():
+                elif trait == 'languages':
+                    bag_of_words = trait_text.split()
+                    languages, pass_code = fetch_known_languages(bag_of_words)
 
-                            if not attribute_dict[key]:
-                                error_dict['attributes'][key] = 1
+                elif trait == 'challenge':
+                    bag_of_words = trait_text.split()
+                    challenge, pass_code = fetch_challenge_rating(bag_of_words)
 
-                            else:
-                                error_dict['attributes'][key] = 0
+                elif trait == 'passive_perception':
+                    pass
 
-                    else:
-                        error_dict[trait] = 0
+                # see if pass code has been issued. If not, increment page
+                # number by one and fetch next page of text to shift through
+                if not pass_code:
+                    trait_page_number += 1
 
-                    # Since we have busted the five page limit, break the
-                    # loop for this trait and move onto the next
-                    break
+                    # If we have gone five pages without seeing anything, issue
+                    # error code for attributes and continue
+                    if (trait_page_number - creature_page_number) > 5:
+
+                        # Issue error codes for specific attributes we were unable
+                        # to fetch
+                        if trait == 'attributes':
+                            error_dict['attributes'] = {}
+
+                            for key in attribute_dict.keys():
+
+                                if not attribute_dict[key]:
+                                    error_dict['attributes'][key] = 1
+
+                                else:
+                                    error_dict['attributes'][key] = 0
+
+                        else:
+                            error_dict[trait] = 0
+
+                        # Since we have busted the five page limit, break the
+                        # loop for this trait and move onto the next
+                        break
 
 
     # Populate the creature_dict with traits that we have fetched
@@ -482,9 +566,9 @@ if __name__ == '__main__':
     monster = flags.monster_to_loopup
     path = flags.monster_manual_path
 
-    page_number, pdf_reader = monster_manual_lookup(path, monster)
+    page_number = monster_manual_lookup(path, monster)
 
-    creature_dict = fetch_wrapper(page_number, pdf_reader)
+    creature_dict = fetch_wrapper(path, page_number)
 
     open_pdf_to_page(page_number, path)
 
