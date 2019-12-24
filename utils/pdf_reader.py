@@ -1,5 +1,10 @@
 import PyPDF2
+
+import argparse
 import re
+import subprocess
+import sys
+
 
 # DEBUGGING Only
 import pdb
@@ -62,156 +67,12 @@ def monster_manual_lookup(manual_file_path, monster):
 
         page_number = page_id_to_number_dict[page_id]
 
-        # Extract text from given pdf page number
+        # Print out creature text for parsing purposes
         page = pdf_reader.getPage(page_number)
-        monster_info_text = page.extractText()
+        text = page.extractText().replace('\n','')
+        print("creature text: ", text)
 
-        # Try to extract all information that we need from this page.
-        monster_info_dict = {}
-
-        # Initialize error dict to keep track of information that
-        # we were unable to fetch
-        error_dict = {}
-
-        ####################
-        # FETCH ATTRIBUTES #
-        ####################
-
-        # Initialize list of attributes we need to fetch
-        attribute_list = ["strength", "dexterity", "constitution",
-                          "intelligence", "wisdom", "charisma"]
-
-        # Initialize empty dict entry to hold attribute information
-        monster_info_dict["attributes"] = {}
-
-        # Initialize loop to grab all attribute information
-        pass_code == 0
-        unfetched_attribute_list = attribute_list
-        attribute_page_number = page_number
-        attribute_page = pdf_reader.getPage(attribute_page_number)
-        attribute_text = attribute_page.extractText()
-        while not pass_code:
-
-            attribute_dict, pass_code = fetch_attributes(attribute_text,
-                                                         attribute_list)
-            for key, value in attribute_dict.items():
-                monster_info_dict["attributes"][key] = value
-
-                # Remove "key" (attribute) from attribute list, as
-                # it has been succesfully fetched
-                unfetched_attribute_list.remove(key)
-
-            # see if pass code has been issued. If not, increment page
-            # number by one and fetch next page of text to shift through
-            if not pass_code:
-                attribute_page_number += 1
-
-                # If we have gone five pages without seeing anything, issue
-                # error code for attributes and continue
-                if (attribute_page_number - page_number) > 5:
-
-                    # Issue error codes for specific attributes we were unable
-                    # to fetch
-                    for attribute in attribute_list:
-
-                        if attribute in unfetched_attribute_list:
-                            error_dict["attributes"][attribute] = 0
-                        else:
-                            error_dict["attributes"][attribute] = 1
-                            break
-
-                # If we have not busted the five page limit yet, fetch the next
-                # page
-                attribute_page = pdf_reader.getPage(attribute_page_number)
-                attribute_text = attribute_page.extractText()
-
-    #####################
-    # FETCH ARMOR CLASS #
-    #####################
-
-    # Initialize empty dictionary entry for armor class
-    # values we want to add: base_value of armor class (an int),
-    # as well as type of armor (natural armor, chainmail, etc.)
-    ac_page_number = attribute_page_number
-    ac_page = pdf_reader.getPage(ac_page_number)
-    ac_text = ac_page.extractText()
-
-    pass_code = 0
-    while not pass_code:
-
-        ac_dict, pass_code = fetch_armor_class(ac_text)
-
-        # if the pass code was not issued, increment page number by one and try again
-        if not pass_code:
-            ac_page_number += 1
-
-            # Check if we have passed the five page limit
-            if (ac_page_number - attribute_page_number) > 3:
-                # Go back to first page of the "creature" and
-                # see if we may have missed it
-                ac_page_number = page_number
-                ac_page = pdf_reader.getPage(ac_page_number)
-                ac_text = ac_page.extractText()
-                continue
-
-            elif (ac_page_number - page_number) > 5 and (ac_page_number - attribute_page_number) > 2:
-                error_dict["armor_class"] = 0
-                break
-
-
-    monster_info_dict["armor_class"] = ac_dict
-
-    ####################
-    # FETCH HIT POINTS #
-    ####################
-
-    # Initialize empty dictionary entry for hit point
-    # values that we want to add: base_value for hit points
-    # as well as the hit die of the creature
-    hp_page_number = page_number
-    hp_page = pdf_reader.getPage(hp_page_number)
-    hp_text = hp_page.extractText()
-
-    pass_code = 0
-    while not pass_code:
-
-        hp_dict, pass_code = fetch_hit_points(hp_text)
-
-        # if the pass code was not issued, increment page number by one and try again
-        if not pass_code:
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-        monster_info_dict, error_code = parse_description_text(monster_info_text,
-                                                               monster_info_dict)
-
-        # If we aren't able to grab everything, keep iterating until
-        # we do. We will force this iteration with an error code
-        # returned from the parsing function. An error_code of 1 means
-        # the script failed to grab a piece of information from the text,
-        # incrementing the page number by one. An error_code of 0 means
-        # that all information was grabbed OR we incremented by 5 and didnt
-        # grab everything, exiting the loop
-        while error_code:
-            page_number += 1
-            page = pdf_reader.getPage(page_number)
-            monster_info_text = page.extractText()
-            monster_info_dict, error_code = parse_description_text(monster_info_text,
-                                                                   monster_info_dict)
-
-        return monster_text
+        return page_number, pdf_reader
 
 def find_index_by_value(outlines, value):
     """
@@ -300,13 +161,20 @@ def parse_description_text(monster_desc_text, monster_info_dict):
     #       (they are seriously messing everything up
     print(monster_desc_text.encode())
 
-def fetch_attributes(text,
-                     attribute_list=None):
+def fetch_attributes(text, attribute_dict={}):
+
+    # List of creature attributes
+    attribute_list = ["Strength", "Dexterity", "Constitution",
+                      "Intelligence", "Wisdom", "Charisma"]
 
     # Retrieve creatures attributes
-
-    attribute_dict = {}
     for attribute in attribute_list:
+
+        # If the attribute is already accounted for in the attribute_dict,
+        # then there is no reason to search for it. Continue to next attribute
+        if attribute in attribute_dict.keys():
+            continue
+
         # Perform regex to find stats in description text:
         # TODO: find a way to get charisma working (it has to do
         #       with the new line character in the text
@@ -324,7 +192,7 @@ def fetch_attributes(text,
 
             base_stat = split_str[1]
 
-            modifier = re.search(r'(\-|\+)(.*?)[^\)]', split_str[2])
+            modifier = re.search(r'(\-|\+)(.*?)[^\)]', split_str[2]).group()
 
 
             attribute_stats = {
@@ -337,8 +205,10 @@ def fetch_attributes(text,
         # If no string was returned, then we know that the pattern wasn't
         # present and we need to increment page number by 1
         except AttributeError:
+            print("attributes fetched: ", attribute_dict)
             return attribute_dict, 0
 
+    print("attribute_dict: ", attribute_dict)
     return attribute_dict, 1
 
 def fetch_armor_class(text):
@@ -351,7 +221,7 @@ def fetch_armor_class(text):
     # MATCH FOR ARMOR CLASS
     # Retrieve armor class
     r_armor_class_str = r'Armor Class(.*?)\)'
-    result_ac = re.search(r_armor_class_str, monster_desc_text, re.M)
+    result_ac = re.search(r_armor_class_str, text, re.M)
 
     armor_class = {}
 
@@ -370,24 +240,23 @@ def fetch_armor_class(text):
     except AttributeError:
         return armor_class, 0
 
+    print("armor_class info: ", armor_class)
     return armor_class, 1
 
+def fetch_hit_points(text):
 
     # MATCH FOR HITPOINTS
-    # See if we've already retrieved hitpoint info
-    try:
-        monster_info_dict["hit_points"]
+    r_hitpoints_pattern = r'Hit Points (.*?)\)'
+    hitpoints_match = re.search(r_hitpoints_pattern, text, re.M)
 
-    except KeyError:
-        # retrieve hit points
-        r_hitpoints_pattern = r'Hit Points (.*?)\)'
-        hitpoints_match = re.search(r_hitpoints_pattern, monster_desc_text, re.M)
+    hitpoints = {}
+
+    # See if regex pattern search actually found anything
+    try:
         s_hitpoints = hitpoints_match.group()
-        print("s_hitpoints: ", s_hitpoints)
 
         # Refine found expression further to get base hitpoints and die
         base_hitpoints = int(re.search('Hit Points (.*?)\(', s_hitpoints).group(1).strip())
-        print("base_hitpoints: ", base_hitpoints)
 
         # Determine modifier, number of die, and die type
         hitpoints_die_stats = re.search('\((.*?)\)', s_hitpoints).group(1)
@@ -397,13 +266,22 @@ def fetch_armor_class(text):
 
         # Incorporate all info we need about creature hitpoints in dictionary
         hitpoints = {
-            'base_hitpoints': base_hitpoints,
-            'die_stats': {
-                'num_die': num_die,
-                'die_type': die_type,
-                'modifier': modifier
-            }
+         'base_hitpoints': base_hitpoints,
+         'die_stats': {
+             'num_die': num_die,
+             'die_type': die_type,
+             'modifier': modifier
+         }
         }
+
+        print("hitpoints success: ", hitpoints)
+        return hitpoints, 1
+
+    except AttributeError:
+        print("hitpoints fail: ", hitpoints)
+        return hitpoints, 0
+
+def fetch_alignment(text):
 
     # MATCH FOR ALIGNMENT
     # list out all possible alignments the creature could have
@@ -411,19 +289,31 @@ def fetch_armor_class(text):
                            'neutral good', 'neutral', 'neutral evil',
                            'chaotic good', 'chaotic neutral', 'chaotic evil']
 
-    # Create a reg expression that matches for any of them
-    alignment_pattern = "{}".format(possible_alignments[0])
-    for possible_alignment in possible_alignments[1:]:
-        alignment_pattern = alignment_pattern + "|{}".format(possible_alignment)
+    # Try to match with regex pattern
+    try:
+        # Create a reg expression that matches for any of them
+        alignment_pattern = "{}".format(possible_alignments[0])
+        for possible_alignment in possible_alignments[1:]:
+            alignment_pattern = alignment_pattern + "|{}".format(possible_alignment)
 
-    r_alignment_pattern = r"" + alignment_pattern
+        r_alignment_pattern = r"" + alignment_pattern
 
-    # use reg expression to find the alignment of our beast!
-    r_alignment_match = re.search(r_alignment_pattern, monster_desc_text, re.M)
-    alignment = r_alignment_match.group()
+        # use reg expression to find the alignment of our beast!
+        r_alignment_match = re.search(r_alignment_pattern, text, re.M)
+        alignment = r_alignment_match.group()
 
-    if alignment == 'chaotic evil':
-        print("You naughty boy!")
+        if alignment == 'chaotic evil':
+            print("You naughty boy!")
+
+        print("alignment: ", alignment)
+        return alignment, 1
+
+    # If regex pattern matched with nothing, return fail code
+    except AttributeError:
+        return alignment, 0
+
+
+def fetch_creature_type(text, alignment):
 
     # Match for creature types
     # Following similar pattern as with alignments, list out all possible
@@ -448,27 +338,156 @@ def fetch_armor_class(text):
 
     print("creature_type: ", creature_type)
 
+def fetch_known_languages(text):
     # Grab languages spoken by the creature
+    pass
+
+def fetch_wrapper(creature_page_number, pdf_reader):
+    """
+    Wrapper function to iterate over page numbers until
+    the desired creture trait we want to fetch has been found
+
+    :param creature_page_number: page number for creature info in
+                                 Monster Manual, determined by the
+                                 monster_manual_lookup method
+
+    :param pdf_reader: pdf reader object for the Monster Manual
+
+    :return creature_dict: dictionary with all the traits that we are
+                           interested in (i.e., attributes, hit_points,
+                           etc.) as keys and stats for those traits as
+                           values
+    """
+    # dict to hold all information we need about a creature
+    creature_dict = {}
+
+    # list of traits that we would like to fetch for creature
+    trait_list = ['attributes', 'armor_class', 'hit_points',
+                  'alignment', 'creature_type',]
 
 
+    for trait in trait_list:
+        # Initialize loop to grab all desired traits of a given creature
+        pass_code = 0
+        trait_page_number = creature_page_number
+
+        # Initialize empty dict to keep track of traits we are unable to
+        # fetch
+        error_dict = {}
+
+        # Initialize empty dict for atttributes
+        if trait == 'attributes':
+            attribute_dict = {}
+
+        while not pass_code:
+
+            trait_page = pdf_reader.getPage(trait_page_number)
+            trait_text = trait_page.extractText().replace('\n','')
+
+            # Fetch attributes
+            if trait == 'attributes':
+
+                attribute_dict, pass_code = fetch_attributes(trait_text,
+                                                             attribute_dict=attribute_dict)
+
+            # Fetch armor class
+            elif trait == 'armor_class':
+
+                armor_class, pass_code = fetch_armor_class(trait_text)
+
+            # Fetch hit points
+            elif trait == 'hit_points':
+
+                hit_points, pass_code = fetch_hit_points(trait_text)
+
+            # Fetch alignment
+            elif trait == 'alignment':
+
+                alignment, pass_code = fetch_alignment(trait_text)
+
+            elif trait == 'creature_type':
+
+                creature_type, pass_score = fetch_creature_type(trait_text)
+
+            # see if pass code has been issued. If not, increment page
+            # number by one and fetch next page of text to shift through
+            if not pass_code:
+                trait_page_number += 1
+
+                # If we have gone five pages without seeing anything, issue
+                # error code for attributes and continue
+                if (trait_page_number - creature_page_number) > 5:
+
+                    # Issue error codes for specific attributes we were unable
+                    # to fetch
+                    if trait == 'attributes':
+                        error_dict['attributes'] = {}
+
+                        for key in attribute_dict.keys():
+
+                            if not attribute_dict[key]:
+                                error_dict['attributes'][key] = 1
+
+                            else:
+                                error_dict['attributes'][key] = 0
+
+                    else:
+                        error_dict[trait] = 0
+
+                    # Since we have busted the five page limit, break the
+                    # loop for this trait and move onto the next
+                    break
 
 
+    # Populate the creature_dict with traits that we have fetched
+    creature_dict['attributes'] = attribute_dict
+    creature_dict['armor_class'] = armor_class
+    creature_dict['hit_points'] = hit_points
+    creature_dict['alignment'] = alignment
+    creature_dict['creature_type'] = creature_type
 
-
-
-
-
-
-
-
+def open_pdf_to_page(page_number,
+                     monster_manual_path):
+    """
+    Uses document viewer to open up Monster Manual pdf to specific
+    page
+    """
+    if sys.platform =='linux':
+        # Try to open pdf with evince document viewer
+        cmd = "evince --page_label={0} {1}".format(page_number, monster_manual_path)
+        process = subprocess.Popen(cmd.split(), stdout=subprocess.PIPE)
+        output, error = process.communicate()
 
 
 if __name__ == '__main__':
 
-    monster_text = monster_manual_lookup("/home/alphagoat/Projects/DnDHelper/DnD_pdfs/dnd_monster_manual.pdf",
-                          "mind flayer")
+    parser = argparse.ArgumentParser()
 
-    parse_description_text(monster_text)
+    parser.add_argument('--monster_manual_path', type=str,
+                        default='../DnD_pdfs/dnd_monster_manual.pdf',
+                        help="System path to DnD 5th Edition Monster Manual"
+                        )
+
+    parser.add_argument('--monster_to_loopup', type=str,
+                        default='minotaur',
+                        help="""
+                             Monster that we would like to lookup in the Monster Manual and extract
+                             stats for
+                             """
+                        )
+
+
+    flags, _ = parser.parse_known_args()
+
+    monster = flags.monster_to_loopup
+    path = flags.monster_manual_path
+
+    page_number, pdf_reader = monster_manual_lookup(path, monster)
+
+    creature_dict = fetch_wrapper(page_number, pdf_reader)
+
+    open_pdf_to_page(page_number, path)
+
 
 
 
